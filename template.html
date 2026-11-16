@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ham Radio Practice Exams</title>
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<div class="container">
+<h1 id="title">Ham Radio Practice Exams</h1>
+<p class="subtitle" id="subtitle">Select an exam</p>
+<div id="examSelect">
+<div style="background:#16213e;border-radius:12px;padding:40px;text-align:center;border:1px solid #0f3460">
+<h2 style="color:#00d4ff;margin-bottom:20px">Which exam?</h2>
+<div class="exam-buttons" id="examButtons"></div>
+</div>
+</div>
+<div id="setup" style="display:none">
+<button class="back-link" onclick="showExamSelect()">&larr; Change exam</button>
+<h2>How many questions?</h2>
+<p id="setupInfo"></p>
+<div class="preset-buttons" id="presetButtons"></div>
+<div class="custom-input">
+<label for="customCount" style="color:#aaa;">Custom:</label>
+<input type="number" id="customCount" min="1" value="25">
+<button onclick="startQuiz(parseInt(document.getElementById('customCount').value))">Start</button>
+</div>
+</div>
+<div id="quiz">
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="question-info"><span id="questionCounter"></span><span id="scoreTracker"></span></div>
+<div class="question-card">
+<div class="question-id" id="questionId"></div>
+<div class="question-figure" id="questionFigure"></div>
+<div class="question-text" id="questionText"></div>
+<div class="answers" id="answersContainer"></div>
+<div class="feedback" id="feedback"></div>
+</div>
+<button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next Question</button>
+</div>
+<div id="results">
+<div class="results-card">
+<div class="score-circle" id="scoreCircle"></div>
+<div class="results-text" id="resultsText"></div>
+<div class="results-detail" id="resultsDetail"></div>
+<div class="results-actions">
+<button class="btn-primary" onclick="startQuiz(totalQuestions)">Try Again</button>
+<button class="btn-secondary" onclick="showSetup()">Change Settings</button>
+<button class="btn-secondary" onclick="showExamSelect()">Change Exam</button>
+</div>
+<div class="review-section" id="reviewSection"></div>
+</div>
+</div>
+</div>
+<script>
+var figures = /*FIGURES*/;
+var exams = /*EXAMS*/;
+var allQuestions=[], exam=null;
+var quizQuestions=[], currentIndex=0, correctCount=0, totalQuestions=35, answered=false, missed=[], answerMap=[];
+function show(id,on){document.getElementById(id).style.display=on?'block':'none';}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function buildExamButtons(){var c=document.getElementById('examButtons');for(var i=0;i<exams.length;i++){var b=document.createElement('button');b.className='exam-btn';b.innerHTML=exams[i].name+' Class<small>'+exams[i].pool+' Question Pool &#8226; '+exams[i].questions.length+' questions</small>';b.setAttribute('data-i',i);b.onclick=function(){selectExam(parseInt(this.getAttribute('data-i')));};c.appendChild(b);}}
+function selectExam(i){exam=exams[i];allQuestions=exam.questions;document.title=exam.name+' Class Practice Exam ('+exam.pool+')';document.getElementById('title').textContent=exam.name+' Class Practice Exam';document.getElementById('subtitle').innerHTML=exam.pool+' Question Pool &#8226; '+allQuestions.length+' Questions &#8226; Effective '+exam.effective;document.getElementById('setupInfo').innerHTML='The actual exam is '+exam.examSize+' questions (must score '+exam.passScore+'/'+exam.examSize+' to pass).<br>Choose a preset or enter a custom number.';var p=document.getElementById('presetButtons');p.innerHTML='';var counts=[10,20,exam.examSize,100].filter(function(n,k,a){return a.indexOf(n)===k;}).sort(function(a,b){return a-b;});for(var k=0;k<counts.length;k++){var b=document.createElement('button');b.className='preset-btn';b.textContent=counts[k]+(counts[k]===exam.examSize?' (Full Exam)':'');b.setAttribute('data-n',counts[k]);b.onclick=function(){startQuiz(parseInt(this.getAttribute('data-n')));};p.appendChild(b);}document.getElementById('customCount').max=allQuestions.length;show('examSelect',false);show('setup',true);}
+function showExamSelect(){show('quiz',false);show('results',false);show('setup',false);show('examSelect',true);document.title='Ham Radio Practice Exams';document.getElementById('title').textContent='Ham Radio Practice Exams';document.getElementById('subtitle').textContent='Select an exam';}
+function startQuiz(count){count=Math.max(1,Math.min(count||exam.examSize,allQuestions.length));totalQuestions=count;quizQuestions=shuffle(allQuestions.slice()).slice(0,count);currentIndex=0;correctCount=0;answered=false;missed=[];show('setup',false);show('results',false);show('quiz',true);showQuestion();}
+function showQuestion(){var q=quizQuestions[currentIndex];answered=false;document.getElementById('questionId').textContent=q.id+(q.refs?' '+q.refs:'');document.getElementById('questionText').textContent=q.question;document.getElementById('questionCounter').textContent='Question '+(currentIndex+1)+' of '+totalQuestions;document.getElementById('scoreTracker').textContent='Score: '+correctCount+'/'+currentIndex;document.getElementById('progressFill').style.width=((currentIndex/totalQuestions)*100)+'%';document.getElementById('feedback').className='feedback';document.getElementById('feedback').textContent='';document.getElementById('nextBtn').style.display='none';var fig=document.getElementById('questionFigure');if(q.figure&&figures[q.figure]){fig.innerHTML='<img src="'+figures[q.figure]+'" alt="'+q.figure+'">';fig.style.display='block';}else{fig.innerHTML='';fig.style.display='none';}var c=document.getElementById('answersContainer');c.innerHTML='';var L=['A','B','C','D'];answerMap=shuffle([0,1,2,3]);for(var i=0;i<answerMap.length;i++){var b=document.createElement('button');b.className='answer-btn';b.innerHTML='<span class="answer-letter">'+L[i]+'</span>'+q.answers[answerMap[i]];b.setAttribute('data-i',String(answerMap[i]));b.onclick=function(){selectAnswer(parseInt(this.getAttribute('data-i')));};c.appendChild(b);}}
+function selectAnswer(s){if(answered)return;answered=true;var q=quizQuestions[currentIndex];var btns=document.querySelectorAll('.answer-btn');var fb=document.getElementById('feedback');var L=['A','B','C','D'];for(var i=0;i<btns.length;i++){var origIdx=parseInt(btns[i].getAttribute('data-i'));btns[i].classList.add('disabled');if(origIdx===q.correct)btns[i].classList.add('correct');if(origIdx===s&&s!==q.correct)btns[i].classList.add('incorrect');}if(s===q.correct){correctCount++;fb.className='feedback correct-fb';fb.innerHTML='Correct!';}else{var correctShuffledPos=answerMap.indexOf(q.correct);fb.className='feedback incorrect-fb';fb.innerHTML='Incorrect. The correct answer is <strong>'+L[correctShuffledPos]+': '+q.answers[q.correct]+'</strong>';missed.push({question:q,selected:s,answerMap:answerMap.slice()});}if(q.refs){fb.innerHTML+='<div class="ref-text">Reference: '+q.refs+'</div>';}document.getElementById('scoreTracker').textContent='Score: '+correctCount+'/'+(currentIndex+1);document.getElementById('nextBtn').style.display='block';document.getElementById('nextBtn').textContent=currentIndex<totalQuestions-1?'Next Question':'See Results';}
+function nextQuestion(){currentIndex++;if(currentIndex>=totalQuestions){showResults();}else{showQuestion();}}
+function showResults(){show('quiz',false);show('results',true);var pct=Math.round((correctCount/totalQuestions)*100);var need=Math.round(exam.passScore/exam.examSize*100);var passed=pct>=need;var c=document.getElementById('scoreCircle');c.className='score-circle '+(passed?'pass':'fail');c.textContent=pct+'%';document.getElementById('resultsText').textContent=passed?'You Passed!':'Keep Studying';document.getElementById('resultsDetail').textContent=correctCount+' correct out of '+totalQuestions+' (passing is '+need+'%)';var r=document.getElementById('reviewSection');if(missed.length>0){var L=['A','B','C','D'];var h='<h3>Missed Questions ('+missed.length+')</h3>';for(var i=0;i<missed.length;i++){var m=missed[i];var yourPos=m.answerMap.indexOf(m.selected);var correctPos=m.answerMap.indexOf(m.question.correct);h+='<div class="review-item"><div class="q-id">'+m.question.id+'</div><div class="q-text">'+m.question.question+'</div><div class="your-answer">Your answer: '+L[yourPos]+' - '+m.question.answers[m.selected]+'</div><div class="correct-answer">Correct: '+L[correctPos]+' - '+m.question.answers[m.question.correct]+'</div></div>';}r.innerHTML=h;}else{r.innerHTML='<h3 style="color:#4caf50;">Perfect Score!</h3>';}}
+function showSetup(){show('quiz',false);show('results',false);show('setup',true);}
+buildExamButtons();
+</script>
+</body>
+</html>
